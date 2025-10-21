@@ -1,13 +1,19 @@
 name: Build Android APK
+
 on:
-  push: { branches: [ main, master, fix/build ] }
+  push:
+    branches: [ main, master, fix/build ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk   # одна точка правды
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -15,16 +21,25 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # Можно оставить, но уже не обязательно — у нас есть wrapper
-      #- name: Make gradlew executable
-      #  run: chmod +x ./gradlew
+      - name: Add SDK tools to PATH
+        run: echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+
+      - name: Ensure Android SDK components
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > VdsProxy/local.properties
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
       - name: Build Debug
-        run: |
-          ./gradlew -p VdsProxy :app:assembleDebug --stacktrace --info
+        run: ./gradlew -p VdsProxy :app:assembleDebug --stacktrace --info
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
+          name: app-debug
           path: VdsProxy/app/build/outputs/apk/debug/*.apk
