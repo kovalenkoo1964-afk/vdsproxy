@@ -1,28 +1,22 @@
 name: Build Android APK
+
 on:
-  push: { branches: [ main, master, fix/build ] }
+  push:
+    branches: [ main, master, fix/build ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
-      - name: Debug repo contents
-        run: |
-          pwd
-          ls -la
-          ls -la VdsProxy || true
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-      - name: Build Debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace --info
+      - run: chmod +x ./gradlew
+      - name: Build Debug
+        run: ./gradlew -p VdsProxy :app:assembleDebug --stacktrace --info
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
