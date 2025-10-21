@@ -8,6 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      PATH: /usr/local/lib/android/sdk/cmdline-tools/latest/bin:/usr/local/lib/android/sdk/platform-tools:${{ env.PATH }}
 
     steps:
       - name: Checkout
@@ -19,49 +23,28 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # Установка Android SDK (cmdline-tools)
-      - name: Install Android SDK cmdline-tools
+      # Убедимся, что стоят нужные компоненты SDK (и cmdline-tools latest)
+      - name: Install/Update Android SDK components
         run: |
-          ANDROID_SDK_ROOT=$HOME/android-sdk
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
-          cd "$ANDROID_SDK_ROOT/cmdline-tools"
-          curl -sSL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdtools.zip
-          unzip -q cmdtools.zip
-          mv cmdline-tools latest
-          rm cmdtools.zip
-          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
+          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
+            "cmdline-tools;latest" \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0"
 
-      - name: Accept SDK licenses & install platforms/build-tools
-        run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
-      # Bootstrap Gradle 8.7 (без кэшей GitHub)
-      - name: Download Gradle 8.7
-        run: |
-          GRADLE_DIR=$HOME/gradle-8.7
-          mkdir -p $GRADLE_DIR
-          curl -sSL https://downloads.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip || \
-          curl -sSL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip || \
-          curl -sSL https://downloads.gradle-dn.com/distributions/gradle-8.7-bin.zip -o gradle.zip
-          unzip -q gradle.zip
-          mv gradle-8.7 $GRADLE_DIR
-          echo "$GRADLE_DIR/bin" >> $GITHUB_PATH
-
-      # Генерируем wrapper внутри проекта и используем его дальше
-      - name: Generate Gradle wrapper
+      # Подкачаем Gradle 8.7 и сделаем wrapper в проекте
+      - name: Download Gradle 8.7 and generate wrapper
         working-directory: ./VdsProxy
         run: |
-          gradle --version
-          gradle wrapper --gradle-version 8.7
+          curl -sSL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip
+          unzip -q gradle.zip
+          ./gradle-8.7/bin/gradle --version
+          ./gradle-8.7/bin/gradle wrapper --gradle-version 8.7
           chmod +x ./gradlew
 
       - name: Build Debug APK
         working-directory: ./VdsProxy
-        env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
         run: ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Upload APK artifact
