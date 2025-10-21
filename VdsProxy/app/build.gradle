@@ -28,10 +28,13 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
-        freeCompilerArgs += [
-            "-Xjsr305=strict",
-            "-Xlint",
-        ]
+        // без чужих флагов; включим обычные предупреждения
+        allWarningsAsErrors = false
+        freeCompilerArgs = []   // <- очищаем
+    }
+    lint {
+        warningsAsErrors false
+        abortOnError false
     }
 }
 

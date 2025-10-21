@@ -31,10 +31,8 @@ jobs:
         run: |
           yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
           sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
-            "cmdline-tools;latest" \
-            "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0"
+            "cmdline-tools;latest" "platform-tools" \
+            "platforms;android-34" "build-tools;34.0.0"
 
       - name: Download Gradle 8.7 and generate wrapper
         working-directory: ./VdsProxy
@@ -50,12 +48,14 @@ jobs:
           set -o pipefail
           ./gradlew :app:compileDebugKotlin --stacktrace --info --warning-mode all --console=plain --no-daemon | tee kt-compile.log
 
-      - name: Upload Kotlin compile log
+      - name: Upload Kotlin/Gradle daemon logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kt-compile-log
-          path: VdsProxy/kt-compile.log
+          name: kotlin-gradle-daemon-logs
+          path: |
+            VdsProxy/kt-compile.log
+            ~/.gradle/daemon/**/daemon-*.out.log
 
       - name: Build Debug APK
         working-directory: ./VdsProxy
