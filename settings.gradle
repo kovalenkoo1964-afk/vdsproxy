@@ -12,5 +12,6 @@ dependencyResolutionManagement {
     mavenCentral()
   }
 }
-rootProject.name = "VdsProxy"
+rootProject.name = "VdsProxyRoot"
 include(":app")
+project(":app").projectDir = file("VdsProxy/app")
