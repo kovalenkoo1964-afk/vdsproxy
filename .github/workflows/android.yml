@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, fix/build ]
 
 jobs:
   build:
@@ -36,32 +36,32 @@ jobs:
             "platforms;android-34" \
             "build-tools;34.0.0"
 
-      # Качаем Gradle 8.7 и генерируем wrapper в проекте
       - name: Download Gradle 8.7 and generate wrapper
         working-directory: ./VdsProxy
         run: |
           curl -sSL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip
           unzip -q gradle.zip
-          ./gradle-8.7/bin/gradle --version
           ./gradle-8.7/bin/gradle wrapper --gradle-version 8.7
           chmod +x ./gradlew
 
-      - name: Build Debug APK (with logs)
+      - name: Kotlin compile (verbose)
         working-directory: ./VdsProxy
         run: |
           set -o pipefail
-          ./gradlew assembleDebug --stacktrace --no-daemon | tee build-debug.log
+          ./gradlew :app:compileDebugKotlin --stacktrace --info --no-daemon | tee kt-compile.log
 
-      # Всегда прикладываем лог, даже если сборка упала
-      - name: Upload build log
+      - name: Upload Kotlin compile log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gradle-build-log
-          path: VdsProxy/build-debug.log
+          name: kt-compile-log
+          path: VdsProxy/kt-compile.log
+
+      - name: Build Debug APK
+        working-directory: ./VdsProxy
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Upload APK artifact
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: VdsProxy-debug-apk
