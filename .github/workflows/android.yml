@@ -8,34 +8,28 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk   # одна точка правды
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 17
+      # JDK 17 обязателен для AGP 8.5.x
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
-      - name: Add SDK tools to PATH
-        run: echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+      - name: Point project to Android SDK (create local.properties)
+        run: echo "sdk.dir=/usr/local/lib/android/sdk" > VdsProxy/local.properties
 
-      - name: Ensure Android SDK components
+      - name: Accept Android SDK licenses
+        run: yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+
+      - name: Ensure SDK components (platform 34 + build-tools)
         run: |
-          yes | sdkmanager --licenses
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Create local.properties
-        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > VdsProxy/local.properties
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Build Debug
+      - name: Build Debug APK
         run: ./gradlew -p VdsProxy :app:assembleDebug --stacktrace --info
 
       - name: Upload APK artifact
