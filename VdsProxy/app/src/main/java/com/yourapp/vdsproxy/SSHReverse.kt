@@ -2,6 +2,7 @@ package com.yourapp.vdsproxy
 
 import android.content.Context
 import net.schmizz.sshj.SSHClient
+import net.schmizz.sshj.connection.channel.direct.LocalPortForwarder
 import net.schmizz.sshj.forwarding.RemotePortForwarder
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import net.schmizz.sshj.userauth.keyprovider.KeyProvider
