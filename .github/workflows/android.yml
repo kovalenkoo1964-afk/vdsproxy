@@ -48,7 +48,7 @@ jobs:
         working-directory: ./VdsProxy
         run: |
           set -o pipefail
-          ./gradlew :app:compileDebugKotlin --stacktrace --info --no-daemon | tee kt-compile.log
+          ./gradlew :app:compileDebugKotlin --stacktrace --info --warning-mode all --console=plain --no-daemon | tee kt-compile.log
 
       - name: Upload Kotlin compile log
         if: always()
@@ -59,10 +59,20 @@ jobs:
 
       - name: Build Debug APK
         working-directory: ./VdsProxy
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        run: ./gradlew assembleDebug --stacktrace --warning-mode all --console=plain --no-daemon
 
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: VdsProxy-debug-apk
           path: VdsProxy/app/build/outputs/apk/debug/*.apk
+
+      - name: Upload build reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-reports
+          path: |
+            VdsProxy/app/build/reports/**
+            VdsProxy/app/build/outputs/logs/**
