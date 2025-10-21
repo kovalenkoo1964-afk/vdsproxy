@@ -1,17 +1,12 @@
 name: Build Android APK
-
 on:
-  workflow_dispatch:
   push:
     branches: [ main, master, fix/build ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      ANDROID_HOME: /usr/local/lib/android/sdk
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,59 +15,16 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
-      - name: Add SDK tools to PATH
-        run: |
-          echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "/usr/local/lib/android/sdk/platform-tools" >> $GITHUB_PATH
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
-      - name: Ensure Android SDK components
-        run: |
-          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
-          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
-            "cmdline-tools;latest" "platform-tools" \
-            "platforms;android-34" "build-tools;34.0.0"
+      - name: Build debug
+        run: ./gradlew :app:assembleDebug --stacktrace --info
 
-      - name: Download Gradle 8.7 and generate wrapper
-        working-directory: ./VdsProxy
-        run: |
-          curl -sSL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip
-          unzip -q gradle.zip
-          ./gradle-8.7/bin/gradle wrapper --gradle-version 8.7
-          chmod +x ./gradlew
-
-      - name: Kotlin compile (verbose)
-        working-directory: ./VdsProxy
-        run: |
-          set -o pipefail
-          ./gradlew :app:compileDebugKotlin --stacktrace --info --warning-mode all --console=plain --no-daemon | tee kt-compile.log
-
-      - name: Upload Kotlin/Gradle daemon logs
-        if: always()
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: kotlin-gradle-daemon-logs
-          path: |
-            VdsProxy/kt-compile.log
-            ~/.gradle/daemon/**/daemon-*.out.log
-
-      - name: Build Debug APK
-        working-directory: ./VdsProxy
-        run: ./gradlew assembleDebug --stacktrace --warning-mode all --console=plain --no-daemon
-
-      - name: Upload APK artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: VdsProxy-debug-apk
+          name: app-debug-apk
           path: VdsProxy/app/build/outputs/apk/debug/*.apk
-
-      - name: Upload build reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gradle-reports
-          path: |
-            VdsProxy/app/build/reports/**
-            VdsProxy/app/build/outputs/logs/**
