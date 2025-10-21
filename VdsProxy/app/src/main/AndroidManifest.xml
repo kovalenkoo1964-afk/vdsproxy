@@ -1,19 +1,42 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application
-        android:label="VdsProxy"
-        android:icon="@android:drawable/sym_def_app_icon"
-        android:allowBackup="true"
-        android:supportsRtl="true"
-        android:usesCleartextTraffic="true">
+<manifest package="com.yourapp.vdsproxy" xmlns:android="http://schemas.android.com/apk/res/android">
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
+    <!-- Интернет обязателен -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Если есть foreground-service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <!-- Если ловишь BOOT_COMPLETED -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
+    <application
+        android:allowBackup="true"
+        android:label="VdsProxy"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+
+        <activity android:name=".MainActivity"
+                  android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
+        <!-- Твой сервис -->
+        <service
+            android:name=".ProxyService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|connectedDevice"/>
+        
+        <!-- Ресивер на автозапуск, если нужен -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>
+
