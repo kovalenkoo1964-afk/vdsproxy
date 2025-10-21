@@ -11,7 +11,6 @@ jobs:
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_HOME: /usr/local/lib/android/sdk
-      PATH: /usr/local/lib/android/sdk/cmdline-tools/latest/bin:/usr/local/lib/android/sdk/platform-tools:${{ env.PATH }}
 
     steps:
       - name: Checkout
@@ -23,8 +22,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # Убедимся, что стоят нужные компоненты SDK (и cmdline-tools latest)
-      - name: Install/Update Android SDK components
+      - name: Add SDK tools to PATH
+        run: |
+          echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "/usr/local/lib/android/sdk/platform-tools" >> $GITHUB_PATH
+
+      - name: Ensure Android SDK components
         run: |
           yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
           sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
@@ -33,19 +36,16 @@ jobs:
             "platforms;android-34" \
             "build-tools;34.0.0"
 
-      # Подкачаем Gradle 8.7 и сделаем wrapper в проекте
-      - name: Download Gradle 8.7 and generate wrapper
-        working-directory: ./VdsProxy
+      - name: Download Gradle 8.7 (no wrapper build)
         run: |
           curl -sSL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle.zip
           unzip -q gradle.zip
-          ./gradle-8.7/bin/gradle --version
-          ./gradle-8.7/bin/gradle wrapper --gradle-version 8.7
-          chmod +x ./gradlew
+          echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
       - name: Build Debug APK
-        working-directory: ./VdsProxy
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        run: |
+          gradle -p VdsProxy --version
+          gradle -p VdsProxy assembleDebug --stacktrace --no-daemon
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
