@@ -5,15 +5,14 @@ plugins {
 
 android {
   namespace "com.yourapp.vdsproxy"
-  compileSdk 34
-
-  defaultConfig {
-    applicationId "com.yourapp.vdsproxy"
-    minSdk 24
-    targetSdk 34
-    versionCode 1
-    versionName "1.0"
-  }
+    compileSdk 34
+    defaultConfig {
+        applicationId "com.yourapp.vdsproxy"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
 
   buildTypes {
     release {
